@@ -42,7 +42,7 @@ deployments:
           PYTHONUTF8: "1"
   
   - name: cat-dog-deployment
-    version: "1.0"
+    version: "1.1"
     tags: ["cat", "dog", "fun"]
     description: "Daily cat fact and dog picture delivery at 9 AM"
     schedule:
