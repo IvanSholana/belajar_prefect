@@ -1,5 +1,3 @@
-import time
-import random
 import requests
 from prefect import flow, task, get_run_logger
 from prefect.task_runners import ConcurrentTaskRunner
@@ -36,43 +34,40 @@ def fetch_joke():
     return joke
 
 @task(name="report_results")
-def report_results(results: dict):
-    """Report the results of the fetched data."""
+def report_results(unit_id: int, cat_facts: str, dog_picture_url: str, joke: dict):
+    """Report the results of the independent tasks."""
     logger = get_run_logger()
-    logger.info("Reporting Results")
-    logger.info(f"Unit ID: {results['unit_id']}")
-    logger.info(f"Cat Facts: {results['cat_facts']}")
-    logger.info(f"Dog Picture URL: {results['dog_picture_url']}")
-    logger.info(f"Joke: {results['joke']['setup']} - {results['joke']['punchline']}")
-    logger.info("Report completed.")
-    
-    return True if results['cat_facts'] and results['dog_picture_url'] and results['joke'] else False
+    logger.info(f"Unit {unit_id} Results:")
+    logger.info(f"Cat Facts: {cat_facts}")
+    logger.info(f"Dog Picture URL: {dog_picture_url}")
+    logger.info(f"Joke: {joke['setup']} - {joke['punchline']}")
+    return {
+        "unit_id": unit_id,
+        "cat_facts": cat_facts,
+        "dog_picture_url": dog_picture_url,
+        "joke": joke
+    }
     
 @flow(name="SubFlow: Process Single Unit", task_runner=ConcurrentTaskRunner())
 def process_single_unit(unit_id: int):
     """Subflow to process a single unit of data."""
     logger = get_run_logger()
     logger.info("Starting subflow to process a single unit.")
-    cat_facts = fetch_cat_facts.submit()
-    dog_picture_url = fetch_dog_picture_url.submit()
-    joke = fetch_joke.submit()
+    cat_facts_future = fetch_cat_facts.submit()
+    dog_picture_url_future = fetch_dog_picture_url.submit()
+    joke_future = fetch_joke.submit()
     
-    logger.info("Waiting for independent tasks to complete...")
+    logger.info("Waiting for independent tasks to complete...") 
     
-    results = {
-        "unit_id": unit_id,
-        "cat_facts": cat_facts.result(),
-        "dog_picture_url": dog_picture_url.result(),
-        "joke": joke.result()
-    }
+    final_result_future = report_results.submit(
+        unit_id=unit_id,
+        cat_facts=cat_facts_future,
+        dog_picture_url=dog_picture_url_future,
+        joke=joke_future
+    )
     
-    report = report_results(results)
-    
-    if report:
-        logger.info(f"Subflow for unit {unit_id} completed successfully.")
-    else:
-        logger.error(f"Subflow for unit {unit_id} failed to complete successfully.")
-    return results
+    logger.info("Subflow completed.")
+    return final_result_future
 
 @task(name="subflow task wrapper")
 def run_subflow(unit_id: int):
@@ -81,19 +76,22 @@ def run_subflow(unit_id: int):
 
 @flow(name="Main Flow: Cat and Dog Facts", task_runner=ConcurrentTaskRunner())
 def main_data_pipeline(units: List[int]):
-    """Main flow to process multiple units of data."""
+    """Flow utama untuk memproses beberapa unit data."""
     logger = get_run_logger()
-    logger.info(f"Starting main flow with {len(units)} units.")
+    logger.info(f"Memulai flow utama dengan {len(units)} unit...")
     
-    subflow_results = [run_subflow.submit(unit_id) for unit_id in units]
+    subflow_futures = [run_subflow.submit(unit_id) for unit_id in units]
     
     logger.info("Pipeline selesai. Berikut hasil seluruh unit:")
     
-    for res in subflow_results:
-        result = res.result()
-        logger.info(f"Unit {result['unit_id']} - Cat Facts: {result['cat_facts']}, Dog Picture URL: {result['dog_picture_url']}, Joke: {result['joke']['setup']} - {result['joke']['punchline']}")
+    for res_future in subflow_futures:
+        # hasil dari wrapper adalah future dari report_results
+        report_future = res_future.result()
+        # kita butuh .result() sekali lagi untuk hasil akhirnya
+        result = report_future.result()
+        logger.info(f"Unit {result['unit_id']} -> Fakta Kucing: {result['cat_fact']}")
         
-    return subflow_results
+    return [r.result().result() for r in subflow_futures]
 
 if __name__ == "__main__":
     units_to_process = [1,2,3,4,5]
