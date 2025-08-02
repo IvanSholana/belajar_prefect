@@ -58,3 +58,18 @@ deployments:
       job_variables: 
         env:
           PYTHONUTF8: "1"
+
+  - name: cat-dog-joke-deployment
+    version: "1.0"
+    description: "Daily cat fact, dog picture, and joke delivery at 9 AM"
+    schedule:
+      cron: "0 9 * * *"
+      timezone: "Asia/Jakarta"
+    flow_name: cat_dog_joke_flow
+    entrypoint: my_awesome_flow_3.py:main_data_pipeline
+    work_pool:
+      name: my-managed-pool
+      work_queue_name: null
+      job_variables: 
+        env:
+          PYTHONUTF8: "1"
