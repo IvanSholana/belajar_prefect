@@ -94,7 +94,3 @@ def main_data_pipeline(units: List[int]):
                     -> Joke: {result['joke']['setup']} - {result['joke']['punchline']}")
         
     return [r.result().result() for r in subflow_futures]
-
-if __name__ == "__main__":
-    units_to_process = [1,2,3,4,5]
-    main_data_pipeline(units=units_to_process)
