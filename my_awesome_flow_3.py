@@ -96,5 +96,5 @@ def main_data_pipeline(units: List[int]):
     return subflow_results
 
 if __name__ == "__main__":
-    units_to_process = list(range(5))
+    units_to_process = [1,2,3,4,5]
     main_data_pipeline(units=units_to_process)
