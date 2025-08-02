@@ -44,13 +44,16 @@ def cat_and_dog_facts_flow(count: int = 3):
     logger.info(f"Memulai alur utama dengan {count} iterasi.")
     
     # PARAREL STEP
-    cat_facts_futures = [get_cat_fact().sumbit() for _ in range(count)]
-    dog_picture_url_futures = get_dog_picture_url().sumbit()
+    cat_facts_futures = [get_cat_fact().submit() for _ in range(count)]
+    dog_picture_url_futures = get_dog_picture_url().submit()
     
     logger.info("Menunggu hasil tugas-tugas independen...")
     
-    report_results.submit(cat_fact=cat_facts_futures, 
-                          dog_picture_url=dog_picture_url_futures)
+    cat_facts_futures_results = [fact.result() for fact in cat_facts_futures]
+    dog_picture_url_future_result = dog_picture_url_futures.result()
+    
+    report_results.submit(cat_fact=cat_facts_futures_results, 
+                          dog_picture_url=dog_picture_url_future_result)
     
     logger.info("Alur utama selesai.")
     
