@@ -29,4 +29,4 @@ def cat_fact_flow(count: int = 1):
     logger.info("Main Cat Fact Flow completed.")
 
 if __name__ == "__main__":
-    cat_fact_flow(count=5)
+    cat_fact_flow()
