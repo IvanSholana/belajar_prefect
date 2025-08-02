@@ -67,6 +67,8 @@ deployments:
       timezone: "Asia/Jakarta"
     flow_name: cat_dog_joke_flow
     entrypoint: my_awesome_flow_3.py:main_data_pipeline
+    parameters:
+      units: 3
     work_pool:
       name: my-managed-pool
       work_queue_name: null

@@ -49,7 +49,7 @@ def report_results(results: dict):
     return True if results['cat_facts'] and results['dog_picture_url'] and results['joke'] else False
     
 @flow(name="SubFlow: Process Single Unit", task_runner=ConcurrentTaskRunner())
-async def process_single_unit(unit_id: int):
+def process_single_unit(unit_id: int):
     """Subflow to process a single unit of data."""
     logger = get_run_logger()
     logger.info("Starting subflow to process a single unit.")
@@ -74,20 +74,26 @@ async def process_single_unit(unit_id: int):
         logger.error(f"Subflow for unit {unit_id} failed to complete successfully.")
     return results
 
+@task(name="subflow task wrapper")
+def run_subflow(unit_id: int):
+    """Wrapper to run the subflow."""
+    return process_single_unit(unit_id)
+
 @flow(name="Main Flow: Cat and Dog Facts", task_runner=ConcurrentTaskRunner())
 def main_data_pipeline(units: List[int]):
-    """
-    Flow utama yang memproses beberapa unit data.
-    Setiap unit diproses oleh subflow yang berjalan secara paralel.
-    """
+    """Main flow to process multiple units of data."""
     logger = get_run_logger()
-    logger.info(f"Starting main flow, mapping {len(units)} units to be processed by subflows in parallel...")
-
-    # .map() akan menjalankan subflow 'process_single_unit' untuk setiap item
-    # di dalam list 'units' secara bersamaan.
-    process_single_unit.map(unit_id=units)
+    logger.info(f"Starting main flow with {len(units)} units.")
     
-    logger.info("All subflow runs have been submitted via .map(). Check the UI to see them run in parallel.")
+    subflow_results = [run_subflow.submit(unit_id) for unit_id in units]
+    
+    logger.info("Pipeline selesai. Berikut hasil seluruh unit:")
+    
+    for res in subflow_results:
+        result = res.result()
+        logger.info(f"Unit {result['unit_id']} - Cat Facts: {result['cat_facts']}, Dog Picture URL: {result['dog_picture_url']}, Joke: {result['joke']['setup']} - {result['joke']['punchline']}")
+        
+    return subflow_results
 
 if __name__ == "__main__":
     units_to_process = list(range(5))
