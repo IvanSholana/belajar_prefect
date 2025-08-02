@@ -89,7 +89,9 @@ def main_data_pipeline(units: List[int]):
         report_future = res_future.result()
         # kita butuh .result() sekali lagi untuk hasil akhirnya
         result = report_future.result()
-        logger.info(f"Unit {result['unit_id']} -> Fakta Kucing: {result['cat_fact']}")
+        logger.info(f"Unit {result['unit_id']} -> Fakta Kucing: {result['cat_facts']} \\\
+                    -> Dog Picture URL: {result['dog_picture_url']} \\\
+                    -> Joke: {result['joke']['setup']} - {result['joke']['punchline']}")
         
     return [r.result().result() for r in subflow_futures]
 
